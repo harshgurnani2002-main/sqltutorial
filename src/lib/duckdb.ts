@@ -4,6 +4,7 @@ let db: duckdb.AsyncDuckDB | null = null;
 let conn: duckdb.AsyncDuckDBConnection | null = null;
 let initPromise: Promise<duckdb.AsyncDuckDB> | null = null;
 let dataSeeded = false;
+let initDataPromise: Promise<void> | null = null;
 
 export type InitProgress = {
   stage: string;
@@ -72,9 +73,12 @@ export async function initSampleData(
   onProgress?: (p: InitProgress) => void
 ): Promise<void> {
   if (dataSeeded) return;
+  if (initDataPromise) return initDataPromise;
 
-  onProgress?.({ stage: 'Creating tables…', percent: 85 });
-  const c = await getConnection();
+  initDataPromise = (async () => {
+    try {
+      onProgress?.({ stage: 'Creating tables…', percent: 85 });
+      const c = await getConnection();
 
   // ── employees ──────────────────────────────────────────
   await c.query(`
@@ -167,6 +171,74 @@ export async function initSampleData(
       (110, 4, 3, 8, 680.00,  '2023-05-20');
   `);
 
-  onProgress?.({ stage: 'Data loaded ✓', percent: 100 });
-  dataSeeded = true;
+  // ── users & profiles (for CASCADE/SET NULL) ────────
+  await c.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id       INTEGER PRIMARY KEY,
+      username VARCHAR NOT NULL
+    );
+  `);
+  await c.query(`
+    INSERT INTO users VALUES
+      (1, 'admin'),
+      (2, 'johndoe'),
+      (3, 'janedoe');
+  `);
+
+  await c.query(`
+    CREATE TABLE IF NOT EXISTS profiles (
+      profile_id INTEGER PRIMARY KEY,
+      user_id    INTEGER,
+      bio        VARCHAR,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+  `);
+  await c.query(`
+    INSERT INTO profiles VALUES
+      (10, 1, 'Site Administrator'),
+      (11, 2, 'Avid reader and writer'),
+      (12, 3, 'Just here for fun');
+  `);
+
+  // ── messy_orders (for Normalization 1NF, 2NF) ────────
+  await c.query(`
+    CREATE TABLE IF NOT EXISTS messy_orders (
+      order_id         INTEGER,
+      customer_name    VARCHAR,
+      customer_address VARCHAR,
+      items_list       VARCHAR,
+      total_price      INTEGER
+    );
+  `);
+  await c.query(`
+    INSERT INTO messy_orders VALUES
+      (1, 'Alice', '123 Apple St',  '2x Mouse, 1x Keyboard', 130),
+      (2, 'Alice', '123 Apple St',  '1x Laptop',             1200),
+      (3, 'Bob',   '456 Banana Rd', '1x Monitor',            350);
+  `);
+
+  // ── courses & enrollments (for BCNF) ────────
+  await c.query(`
+    CREATE TABLE IF NOT EXISTS courses (
+      student_name VARCHAR,
+      subject      VARCHAR,
+      teacher      VARCHAR
+    );
+  `);
+  await c.query(`
+    INSERT INTO courses VALUES
+      ('Alice', 'Math',    'Mr. Smith'),
+      ('Bob',   'Math',    'Mr. Smith'),
+      ('Alice', 'Science', 'Ms. Jones');
+  `);
+
+      onProgress?.({ stage: 'Data loaded ✓', percent: 100 });
+      dataSeeded = true;
+    } catch (err) {
+      initDataPromise = null;
+      throw err;
+    }
+  })();
+
+  return initDataPromise;
 }

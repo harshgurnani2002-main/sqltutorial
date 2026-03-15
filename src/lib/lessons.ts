@@ -1,3 +1,5 @@
+import { advancedLessons } from './advanced-lessons';
+
 export type InteractiveExample = {
   title: string;
   description: string;
@@ -1588,4 +1590,5 @@ ORDER BY total_spent DESC;
       { id: 'adv_5', title: 'Customer Tiers', description: "Create a customer tier report: show name, total_spent, and tier (VIP > 2000, Regular > 500, else New).", expectedSql: "SELECT c.name, COALESCE(SUM(o.amount), 0) AS total_spent, CASE WHEN SUM(o.amount) > 2000 THEN 'VIP' WHEN SUM(o.amount) > 500 THEN 'Regular' ELSE 'New' END AS tier FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.name ORDER BY total_spent DESC;", hint: "LEFT JOIN, GROUP BY, CASE, COALESCE for NULLs.", solution: "SELECT c.name, COALESCE(SUM(o.amount), 0) AS total_spent,\n  CASE\n    WHEN SUM(o.amount) > 2000 THEN 'VIP'\n    WHEN SUM(o.amount) > 500 THEN 'Regular'\n    ELSE 'New'\n  END AS tier\nFROM customers c\nLEFT JOIN orders o ON c.customer_id = o.customer_id\nGROUP BY c.name\nORDER BY total_spent DESC;" },
     ],
   },
+  ...advancedLessons
 ];
