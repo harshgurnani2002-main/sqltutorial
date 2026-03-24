@@ -232,6 +232,65 @@ export async function initSampleData(
       ('Alice', 'Science', 'Ms. Jones');
   `);
 
+  // ── dirty_products (for Data Cleaning) ─────────────────
+  await c.query(`
+    CREATE TABLE IF NOT EXISTS dirty_products (
+      id    INTEGER PRIMARY KEY,
+      name  VARCHAR,
+      price VARCHAR
+    );
+  `);
+  await c.query(`
+    INSERT INTO dirty_products VALUES
+      (1, 'Laptop', '1200'),
+      (2, ' Monitor ', '350'),
+      (3, 'Mouse', '-15'),
+      (4, NULL, '45'),
+      (5, 'Headset', '120.50'),
+      (6, 'Webcam', NULL),
+      (7, 'Desk', '$500'),
+      (8, 'Chair', '450000');
+  `);
+
+  // ── raw_customers (for Data Cleaning) ──────────────────
+  await c.query(`
+    CREATE TABLE IF NOT EXISTS raw_customers (
+      id         INTEGER PRIMARY KEY,
+      name       VARCHAR,
+      email      VARCHAR,
+      phone      VARCHAR,
+      created_at DATE
+    );
+  `);
+  await c.query(`
+    INSERT INTO raw_customers VALUES
+      (1, 'Alice',   'alice@gmail.com', '555-0100',      '2022-01-10'),
+      (2, 'Bob ',    'BOB@yahoo.com',   '(555) 0101',    '2022-02-15'),
+      (3, 'Charlie', 'charlie@gnail.com','555-0102',     '2025-10-01'),
+      (4, 'Diana',   NULL,              NULL,            '2021-03-22'),
+      (5, 'Eve',     'eve.site.com',    '555 0104',      '2022-11-05'),
+      (6, 'Frank',   'frank@gmail.com', '555-0105',      '2022-01-10');
+  `);
+
+  // ── raw_orders (for Data Cleaning) ─────────────────────
+  await c.query(`
+    CREATE TABLE IF NOT EXISTS raw_orders (
+      id          INTEGER PRIMARY KEY,
+      customer_id INTEGER,
+      status      VARCHAR,
+      amount      INTEGER,
+      created_at  DATE
+    );
+  `);
+  await c.query(`
+    INSERT INTO raw_orders VALUES
+      (101, 1, 'process',     2400, '2023-01-15'),
+      (102, 2, 'shipped_out', 425,  '2023-01-16'),
+      (103, 99, 'F',          350,  '2023-02-10'),
+      (104, 3, 'delivered',   450,  '2023-02-14'),
+      (105, 4, 'ship',        1200, '2023-03-05');
+  `);
+
       onProgress?.({ stage: 'Data loaded ✓', percent: 100 });
       dataSeeded = true;
     } catch (err) {
